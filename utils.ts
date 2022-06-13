@@ -12,7 +12,7 @@ import fs from 'fs'
 import path from 'path'
 
 /** Caminho do certificado para a aplicação. */
-const certPath = Env.get('APP_CERT_PATH', './.cert')
+const certPath = path.resolve(Env.get('APP_CERT_PATH', './.cert'))
 
 export const privateKeyPath = path.resolve(certPath + '/api_key.pem')
 
@@ -89,6 +89,8 @@ export function generateKeys() {
    }
 
   const { publicKey, privateKey } = generateKeyPairSync('rsa', options) 
+
+  if(!fs.existsSync(certPath)) fs.mkdirSync(certPath)
 
   fs.writeFileSync(certPath + '/api_key.pem', privateKey)
   fs.writeFileSync(certPath + '/api_key_public.pem', publicKey)
