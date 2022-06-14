@@ -4,10 +4,11 @@ import { BasicLogger } from "App/Logger/BasicLogger";
 import Env from '@ioc:Adonis/Core/Env'
 import { objectToString } from 'App/../utils';
 
-export class MSSQLConnection implements IDatabaseConnection{    
+export class MSSQLConnection implements IDatabaseConnection{
     sqlType: SQLTypes;
     sqlDialet: string;
-    private _sqlCon: Connection; 
+    private _sqlCon: Connection; //conexão principal
+    //private _conPool: ConObj[] = []; //conexões para executarem respectivas request(para paralelizar melhor) 
     private _config: any;
     logger: BasicLogger;
 
@@ -94,26 +95,36 @@ export class MSSQLConnection implements IDatabaseConnection{
 
         }while(sql.indexOf('?') !== -1)
         
-        this.log(sql)
+        //this.log(sql)
         return sql
     }
 
     executeQuery(sql: string, params?: any[], callback?: ((erro?: Error, result?: any) => void)) {
-    
-        let request = new Request(this.normalizeSQL(sql), (err, rowCount, results) => { callback && callback(err, this.normalizeResults(results)); rowCount; })
-
+        //cria uma nova conexão para não interferir em outras já existentes       
+        let newConId = new Date().getMilliseconds() //identificador desta conexão
+        let newConnection = new Connection(this._config)
+        //newConnection.on('end', () => { this.log('Connection #' + newConId + ' closed') })
+        
+        let adaptedSql = this.normalizeSQL(sql)
+        let request = new Request(adaptedSql, (err, rowCount, results) => { callback && callback(err, this.normalizeResults(results)); rowCount; })
+        
         if(params && params.length > 0)
             params.forEach((param, i) => { request.addParameter('param' + (i + 1), this.getSQLType(param), param) })
 
-        request.once('error', (err) => { this.log('Erro: '+ err.errors ?? err.message); callback && callback(err, []) })
+        request.on('error', (err) => { this.log('Erro: ' + err.message ?? objectToString(err) + `\non request #${newConId}`); callback && callback(err, []) })
 
-        request.once('done', (rowCount) => { this.log('Last statement done. Rows: ' + rowCount) } )
+        request.on('requestCompleted', () => { this.log(`Request #${newConId} complete`); newConnection.close(); /*this._sqlCon.unprepare(request)*/ } )
 
-        request.once('requestCompleted', () => { this.log('Request complete.') } )
+        request.on('prepared', () => { this.log(`Prepare statement #${newConId}: `  + adaptedSql); newConnection.execute(request, this.paramsToObj(params)) })
+        
+        newConnection.connect((err) => { 
+            if(err) { this.log(err.message); return }
+            
+            //this.log('Connection #' + newConId + ' estabilished')
+            newConnection.prepare(request)
+        });
 
-        request.once('prepared', () => this._sqlCon.execute(request, this.paramsToObj(params)) )
-
-        this._sqlCon.prepare(request); this.log('Request prepared')
+        //this._sqlCon.prepare(request); this.log('Request prepared')
     }
 
     /** Pega o resultado, na qual vem como um array que contem rows que por sua vez 
@@ -130,6 +141,7 @@ export class MSSQLConnection implements IDatabaseConnection{
         return objects
     }
 
+    /** Converte parâmetros do array para um objeto com todos os elementos do array. */
     private paramsToObj(params?: any[]): {} {
         const obj = {};
 
@@ -138,7 +150,8 @@ export class MSSQLConnection implements IDatabaseConnection{
         let i = 1
         params.forEach((param) => { obj['param' + i.toString()] = param; i++; })
 
-        this.log('Parameters: ' + objectToString(obj))
+        this.log('Parameters: ' + objectToString(obj, 0))
         return obj
     }
+
 }

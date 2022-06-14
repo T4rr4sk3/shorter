@@ -117,3 +117,12 @@ export function arrayToString(array: any[], separator?: string){
 export function objectToString(obj: any, space?: string | number){
   return JSON.stringify(obj, undefined, space ?? 1)
 }
+
+/** @description Define um objeto genérico que tenha um id.  @abstract { id: number, ...}*/
+interface GenericObject { id: number }
+/** Busca por um objeto (que possua um `id: number`) no array e retorna seu index.
+ * @returns O index do objeto ou -1 caso não encontrado.
+ */
+export function buscaIndexNoArrayPorId<Type extends GenericObject>(arrayBusca: Type[], idBusca: number){
+  return arrayBusca.findIndex((value) => { return value.id === idBusca })
+}

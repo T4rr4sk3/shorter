@@ -11,7 +11,7 @@ class DatabaseConnector {
 
     executeQuery(sql: string, params?: any[], callback?: (erro?: Error, results?: any) => void) {
         this._connection.executeQuery(sql, params, callback);
-    };    
+    };
 
     constructor() {
         let tipoSQL = Env.get('SQLTYPE');        
@@ -36,10 +36,12 @@ class DatabaseConnector {
         let config;
         switch(this.SQLTypeInUse){
             case SQLTypes.MySQL: { //isso é apenas feito para ajudar no desenvolvimento.
-                config = { host: Env.get('MYSQLHOST'), user: Env.get('MYSQLUSERDB'), port: Env.get('MYSQLPORT'), database: Env.get('MYSQLDATABASE')  } as ConnectionConfigMySQL 
+                config = { 
+                    host: Env.get('MYSQLHOST'), user: Env.get('MYSQLUSERDB'), port: Env.get('MYSQLPORT'), database: Env.get('MYSQLDATABASE') 
+                } as ConnectionConfigMySQL 
             } break;
 
-            case SQLTypes.SQLServer: { //exato, daniel de alguns dias atrás...
+            case SQLTypes.SQLServer: { //exato, Daniel de alguns dias atrás...
                 config = { 
                     authentication: { type: 'default', options: { userName: Env.get('MSSQLUSER'), password: Env.get('MSSQLPASS') } },
                     server: Env.get('MSSQLHOST'),
@@ -49,13 +51,13 @@ class DatabaseConnector {
 
         }
 
-        this._connection.config<typeof config>(config);
+        this._connection.config<typeof config>(config); //seta a configuração da conexão.
     }
 
     iniciaConexao(){
         try{
             this.configuraBanco()
-            this._connection.start(true);
+            this._connection.start(Env.get('SQL_LOGS', true));
         }catch(e){
             console.log(e) //printa erro
         }

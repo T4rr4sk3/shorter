@@ -12,8 +12,8 @@ export default class LinkController{
     private path = __dirname
     private log(log: string) { basicLog.geraLog(log) }
 
-    //Index
-    public async index({ view }: HttpContextContract) { return view.render('welcome'); }
+    //Index                                                                     I'm a teapot!
+    public async index({ response }: HttpContextContract) { return response.status(418) }
 
     //All
     public async getAll({ response, view }: HttpContextContract){        
@@ -81,17 +81,16 @@ export default class LinkController{
             response.notFound(view.renderSync('errors/not-found'));
         }
 
-        if(link) {
-            link.visitas++;
-            linkService.updateNoBanco(link).catch((reason) => {
+        if(link) {            
+            linkService.incrementVisitaEm1(link.id).catch((reason) => {
                 let msg = reason + `\nErro ao dar update no Link. (${this.path}:43)`
                 console.log(msg);
                 this.log(msg);
             });
 
-            this.log('/' + codigoUrl + ': Link encontrado e atualizado. Redirecionando para ' + link.url)
-            response.header('cache-control', 'no-cache, no-store, max-age=3600, must-revalidate');    
-            response.redirect(link.url);
+            //this.log('/' + codigoUrl + ': Link encontrado e atualizado. Redirecionando para ' + link.url)
+            response.header('cache-control', 'no-cache, no-store, max-age=3600, must-revalidate');
+            response.redirect(link.url, undefined, 302);
         }
     }
 

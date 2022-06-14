@@ -32,6 +32,19 @@ class LinkService implements IServiceBase<Link>{
         })
     }
 
+    /** Incrementa a coluna `visitas` em 1 pelo próprio banco, evitando o update que em ordem errada pode perder informações importantes. */
+    public async incrementVisitaEm1(id: number): Promise<void> {
+        let incrementSQL = `update ${this.table} set visitas = (SELECT visitas + 1 FROM dbo.link where id = ?) where id = ?`
+
+        return new Promise((resolve, reject) => {
+            dbConnector.executeQuery(incrementSQL, [id, id], (err) => {
+                if(err) reject(err.message)
+
+                else resolve();
+            })
+        })
+    }
+
     /** Pega um link pelo codigo no banco de dados. */
     public async pegaPorCodigo(codigo: string): Promise<Link>{
         return new Promise((resolve, reject) => {

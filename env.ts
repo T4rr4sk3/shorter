@@ -41,7 +41,8 @@ export default Env.rules({
   MSSQLDATABASE: Env.schema.string(),
   CODE_LENGHT: Env.schema.number(),
   CREATE: Env.schema.boolean(),
-  EXIBE_CONFIG: Env.schema.boolean(),
   TOKEN_EXPIRES_IN: Env.schema.number(),
   LOGS_PATH: Env.schema.string(),
+  SQL_LOGS: Env.schema.boolean(),
+  EXIBE_CONFIG: Env.schema.boolean(),
 })
