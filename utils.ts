@@ -105,6 +105,9 @@ export function generateKeys() {
  */
 export function arrayToString(array: any[], separator?: string){
   let str = '[ ', separador = separator ?? ', '
+
+  if(array.length === 0) str += separador //corrige a posição para apagar o separador e deixar só o colchete vazio.
+  
   array.forEach((value) => { 
     if(value instanceof Date) str += 'Date: ' + value.toLocaleString() + separador
     else str += typeof value + ': ' + value.toString() + separador

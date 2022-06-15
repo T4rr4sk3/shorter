@@ -8,7 +8,7 @@ export interface Link extends NovoLink { id: number, visitas: number }
 
 class LinkService implements IServiceBase<Link>{
     private table: string
-    constructor() { this.table = dbConnector.SQLTypeInUse === SQLTypes.MySQL ? 'link':'dbo.link' }
+    constructor() { this.table = dbConnector.SQLTable }
     
     public async pegaPorId(id: number): Promise<Link | null> {
         return new Promise( (resolve, reject) => {
@@ -34,7 +34,7 @@ class LinkService implements IServiceBase<Link>{
 
     /** Incrementa a coluna `visitas` em 1 pelo próprio banco, evitando o update que em ordem errada pode perder informações importantes. */
     public async incrementVisitaEm1(id: number): Promise<void> {
-        let incrementSQL = `update ${this.table} set visitas = (SELECT visitas + 1 FROM dbo.link where id = ?) where id = ?`
+        let incrementSQL = `update ${this.table} set visitas = (SELECT visitas + 1 FROM ${this.table} where id = ?) where id = ?`
 
         return new Promise((resolve, reject) => {
             dbConnector.executeQuery(incrementSQL, [id, id], (err) => {

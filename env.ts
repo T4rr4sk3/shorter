@@ -15,14 +15,16 @@
 import Env from '@ioc:Adonis/Core/Env'
 
 export default Env.rules({
+  /** Host onde esta aplicação roda. */
   HOST: Env.schema.string({ format: 'host' }),
+  /** Porta da aplicação. */
   PORT: Env.schema.number(),
   APP_KEY: Env.schema.string(),
   APP_NAME: Env.schema.string(),
   APP_MASTER_USER: Env.schema.string(),
   APP_MASTER_PASS: Env.schema.string(),
   APP_SALT: Env.schema.string(),
-  APP_CERT_PATH: Env.schema.string(),
+  APP_CERT_PATH: Env.schema.string.optional(),
   CACHE_VIEWS: Env.schema.boolean(),
   SESSION_DRIVER: Env.schema.string(),
   DRIVE_DISK: Env.schema.enum(['local'] as const),
@@ -30,19 +32,26 @@ export default Env.rules({
   ORIGIN: Env.schema.string(),
   DOMAIN: Env.schema.string(),
   SQLTYPE: Env.schema.enum(['mysql', 'sqlserver']),
+  SQLCREATE: Env.schema.boolean.optional(),
+  //MYSQL
   MYSQLHOST: Env.schema.string({ format: 'host' }),
   MYSQLPORT: Env.schema.number(),
-  MYSQLUSERDB: Env.schema.string(),
-  MYSQLPASSDB: Env.schema.string(),
+  MYSQLUSER: Env.schema.string(),
+  MYSQLPASS: Env.schema.string(),
   MYSQLDATABASE: Env.schema.string(),
+  MYSQLTABLE: Env.schema.string(),
+  MYSQLCREATE_SCRIPT: Env.schema.string.optional(),
+  //SQLSERVER
   MSSQLHOST: Env.schema.string({ format: 'host' }),
   MSSQLUSER: Env.schema.string(),
   MSSQLPASS: Env.schema.string(),
   MSSQLDATABASE: Env.schema.string(),
+  MSSQLTABLE: Env.schema.string(),
+  MSSQLCREATE_SCRIPT: Env.schema.string.optional(),
+  //UTILS
   CODE_LENGHT: Env.schema.number(),
-  CREATE: Env.schema.boolean(),
   TOKEN_EXPIRES_IN: Env.schema.number(),
   LOGS_PATH: Env.schema.string(),
-  SQL_LOGS: Env.schema.boolean(),
+  SQL_LOGS: Env.schema.boolean.optional(),
   EXIBE_CONFIG: Env.schema.boolean(),
 })

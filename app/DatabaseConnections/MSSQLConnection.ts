@@ -37,7 +37,7 @@ export class MSSQLConnection implements IDatabaseConnection{
             this._sqlCon.connect((err) => {
                 if(exibeLog){
                     if(err) {
-                        console.log(err.message);
+                        console.log(err.message ?? (err as any).errors);
                         this.log(err.message)
 
                     } else {
@@ -49,7 +49,7 @@ export class MSSQLConnection implements IDatabaseConnection{
                 }
             })
         } catch(err){
-            if(exibeLog) { console.log(err.message); this.log(err.message) }
+            if(exibeLog) { console.log(err.message ?? err.errors); this.log(err.message ?? err.errors) }
             throw err
         }
     }
@@ -111,7 +111,7 @@ export class MSSQLConnection implements IDatabaseConnection{
         if(params && params.length > 0)
             params.forEach((param, i) => { request.addParameter('param' + (i + 1), this.getSQLType(param), param) })
 
-        request.on('error', (err) => { this.log('Erro: ' + err.message ?? objectToString(err) + `\non request #${newConId}`); callback && callback(err, []) })
+        request.on('error', (err) => { this.log('Erro: ' + ((err as any).errors ?? err.message ?? objectToString(err)) + `\non request #${newConId}`); callback && callback(err, []) })
 
         request.on('requestCompleted', () => { this.log(`Request #${newConId} complete`); newConnection.close(); /*this._sqlCon.unprepare(request)*/ } )
 
