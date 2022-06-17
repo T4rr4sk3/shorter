@@ -10,11 +10,17 @@ export default class Auth {
     public async handle({ request, response, view }: HttpContextContract, next: () => Promise<void>) {
         const reqAuth = request.headers().authorization
 
-        if(!reqAuth) { response.unauthorized(view.renderSync('errors/unauthorized')); return }
+        if(!reqAuth) { 
+            this.log(objectToString({ path: request.url(), erro: 'tentativa de acesso sem o header authorization', host: request.host(), hostname: request.hostname(), ip: request.ip(), method: request.method() }, 0))
+            response.unauthorized(view.renderSync('errors/unauthorized')); 
+            return //depois tentar algum método para evitar logar informações repetidas
+        }
     
         verify(reqAuth, readFileSync(privateKeyPath), (err, decoded) => { 
-            if(err) 
-                response.abort({ erro: 'token inválido.', description: err })
+            if(err) {
+                this.log(objectToString({ path: request.url(), erro: 'tentativa de acesso sem token', description: err, hostname: request.hostname(), ip: request.ip(), method: request.method(), reqAuth }, 0))
+                response.abort(view.renderSync('errors/unauthorized'))
+            }
 
             else{ 
                 let agora = new Date()

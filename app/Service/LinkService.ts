@@ -78,9 +78,26 @@ class LinkService implements IServiceBase<Link>{
 
     public async retornaLista(): Promise<Link[]>{
         return new Promise( (resolve, reject) => { 
-            dbConnector.executeQuery(`SELECT * FROM ${this.table}`, undefined, (err, results) => {
+            dbConnector.executeQuery(`SELECT * FROM ${this.table} ORDER BY id ASC`, undefined, (err, results) => {
                 if(err) reject(err.message);
                 else resolve(results);
+            })
+        })
+    }
+
+    public async deletePorId(id: number): Promise<Link>{
+        let deleteSQL = `DELETE FROM ${this.table} WHERE id = ?`
+
+        let erro;
+        let link = await this.pegaPorId(id).catch((reason) => erro = reason)
+
+        return new Promise((resolve, reject) => {                        
+            if(!link || erro) reject('Link não encontrado.')
+
+            dbConnector.executeQuery(deleteSQL, [id], (err) => {
+                if(err) reject(err.message)
+
+                else resolve(link);
             })
         })
     }

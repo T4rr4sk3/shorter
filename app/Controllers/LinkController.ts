@@ -2,7 +2,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Env from '@ioc:Adonis/Core/Env'
 import linkService from 'App/Service/LinkService';
 import { sign } from 'jsonwebtoken';
-import { privateKeyPath, geraCodigo, sha256 } from 'App/../utils';
+import { privateKeyPath, geraCodigo, sha256, objectToString } from 'App/../utils';
 import { readFileSync } from 'fs'
 import basicLog from 'App/Logger/BasicLogger';
 
@@ -55,15 +55,16 @@ export default class LinkController{
             
             else{                                
                 const token = sign({ userBody }, readFileSync(privateKeyPath), { expiresIn: Env.get('TOKEN_EXPIRES_IN') });
-
+                this.log('Token gerado para ' + objectToString({ host: request.host(), hostname: request.hostname(), ip: request.ip(), }, 0))
                 response.send({ token });
             }
 
-        }catch(erro){ //se erro for o http exception, manda a página 404
+        }catch(erro){ //se erro for o http exception, manda a página 401
             if(erro.message.startsWith('E_HTTP_EXCEPTION')) 
                 response.status(401).send(view.renderSync('errors/unauthorized'));
 
-            else console.log(erro)
+            else { console.log(erro) } //; this.log(erro) } //talvez alguém tente um DDoS, inchando o log de erro. 
+            // Depois tentar método de evitar inflar logs por causa de requisições repetidas
         }        
     }
 
@@ -117,16 +118,37 @@ export default class LinkController{
 
         if(urlEnviada.trim() === '') response.status(400).send({ "erro": "Tentou enviar um link vazio." })
 
-        let novoLink = await linkService.insereNoBanco({ codigo: novoCodigo, url: urlEnviada, nome: nomeLinkEnviado }).catch((reason) => { erro = reason });
+        let novoLink = await linkService.insereNoBanco({ codigo: novoCodigo, url: urlEnviada, nome: nomeLinkEnviado }).catch((reason) => erro = reason);
     
         if(erro){
             this.log('/new: ' + erro)
             response.send({ erro })
+            return
         }
 
         let msg = 'Novo link gerado. Código: ' + novoCodigo + (novoLink ? ' ID: ' + novoLink : '')
         console.log(msg);
         this.log('/new: ' + msg);
         response.send(resultado);
+    }
+
+    //Del
+    public async postDel({ request, response }: HttpContextContract){
+        const idLinkEnviado = request.body()["id"] //pega o id do link da body
+        let erro;
+
+        let linkDeletado = await linkService.deletePorId(idLinkEnviado).catch((reason) => erro = reason)
+
+        if(erro){
+            this.log('/del: ' + erro)
+            console.log('/del: ' + erro)
+            response.send({ erro })
+            return
+        }
+
+        let msg = 'Link deletado. Código: ' + linkDeletado.codigo + ' ID: ' + linkDeletado.id
+        console.log(msg)
+        this.log('/del: ' + msg);
+        response.send({ linkDeletado })
     }
 }

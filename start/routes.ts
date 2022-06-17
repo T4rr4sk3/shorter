@@ -6,6 +6,9 @@ Route.get('/', 'LinkController.index');
 // ------------------- Criação de um novo link pelo método POST. -------------------
 Route.post('/new', 'LinkController.postNew').middleware('auth');
 
+// ------------------- Deleta um link pelo método POST. -------------------
+Route.post('/del', 'LinkController.postDel').middleware('auth');
+
 // ------------------- Get todos os links. -------------------
 Route.get('/all', 'LinkController.getAll').middleware('auth');
 

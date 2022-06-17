@@ -15,8 +15,8 @@ export class BasicLogger implements ILogger {
 
     inicializaLog(fileName: string){
         //let caminhoLogs = path.relative(__dirname, Env.get('LOGS_PATH')) //caso eu bote um caminho já existente
-        let pathToLogs = Env.get('LOGS_PATH')
-        this.pathLogFile = pathToLogs + '/' + fileName
+        let pathToLogs = Env.get('LOGS_PATH'), now = new Date(), data = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
+        this.pathLogFile = `${pathToLogs}/${data}_${fileName}`
 
         if(!fs.existsSync(pathToLogs)) fs.mkdirSync(pathToLogs)
 

@@ -24,20 +24,22 @@ class DatabaseConnector {
         switch(tipoSQL){
             case 'mysql':
                 this._connection = new MySQLConnection();
-                this.SQLTypeInUse = SQLTypes.MySQL;
-                this.SQLTable = Env.get('MYSQLTABLE', 'link')
+                this.SQLTypeInUse = SQLTypes.MySQL;                
+                this.SQLTable = Env.get('MYSQLTABLE', '')
                 break;
 
             case 'sqlserver':
             case 'mssql':
                 this._connection = new MSSQLConnection();
                 this.SQLTypeInUse = SQLTypes.SQLServer;
-                this.SQLTable = Env.get('MSSQLTABLE','dbo.link')
+                this.SQLTable = Env.get('MSSQLTABLE', '')
                 break;
 
             default:
                 throw new Error('Tipo do SQL inválido, verifique as variáveis de ambiente ou acesse os logs para verificar o que está acontecendo!')
-        }        
+        }
+
+        if(this.SQLTable === '') throw new Error('Tabela SQL não definida para o tipo de SQL selecionado!')
     }
     
     /** Função para configurar a conexão de acordo com o SQLTypes. */
@@ -45,12 +47,16 @@ class DatabaseConnector {
         let config;
         switch(this.SQLTypeInUse){
             case SQLTypes.MySQL: { //isso é apenas feito para ajudar no desenvolvimento.
+                if(!this.validaConfigMySQL()) throw new Error("Configuração MySQL não definida, favor verificar variáveis do ambiente (environment)")
+
                 config = { 
-                    host: Env.get('MYSQLHOST'), user: Env.get('MYSQLUSERDB'), port: Env.get('MYSQLPORT'), database: Env.get('MYSQLDATABASE') 
+                    host: Env.get('MYSQLHOST'), user: Env.get('MYSQLUSER'), port: Env.get('MYSQLPORT'), database: Env.get('MYSQLDATABASE'), password: Env.get('MYSQLPASS') 
                 } as ConnectionConfigMySQL 
             } break;
 
             case SQLTypes.SQLServer: { //exato, Daniel de alguns dias atrás...
+                if(!this.validaConfigMSSQL()) throw new Error("Configuração MSSQL não definida, favor verificar variáveis do ambiente (environment)")
+
                 config = { 
                     authentication: { type: 'default', options: { userName: Env.get('MSSQLUSER'), password: Env.get('MSSQLPASS') } },
                     server: Env.get('MSSQLHOST'),
@@ -63,6 +69,20 @@ class DatabaseConnector {
         this._connection.config<typeof config>(config); //seta a configuração da conexão.
     }
 
+    /** Valida variáveis de ambiente do MySQL */
+    private validaConfigMySQL(): boolean {
+        return new Boolean(
+            Env.get('MYSQLHOST') && Env.get('MYSQLUSER') && Env.get('MYSQLPORT') && Env.get('MYSQLDATABASE')
+        ).valueOf()
+    }
+
+    /** Valida variáveis de ambiente do MSSQL */
+    private validaConfigMSSQL(): boolean {
+        return new Boolean(
+            Env.get('MSSQLUSER') && Env.get('MSSQLPASS') && Env.get('MSSQLHOST') && Env.get('MSSQLDATABASE')
+        ).valueOf()
+    }
+
     /** Inicia a conexão com o banco de dados selecionado. */
     iniciaConexao(){
         try{
@@ -73,7 +93,7 @@ class DatabaseConnector {
                 let script_path: string;
 
                 switch(this.SQLTypeInUse) {
-                    case SQLTypes.MySQL: 
+                    case SQLTypes.MySQL:
                         script_path = Env.get('MYSQLCREATE_SCRIPT', undefined); break;
                     
                     case SQLTypes.SQLServer:
@@ -88,7 +108,7 @@ class DatabaseConnector {
                 this._connection.executeQuery(script, [], (err) => { if(err) console.log(err) })
             }
         }catch(e){
-            console.log('Erro: ' + e.message) //printa erro
+            console.log('Erro: ' + e.errors ?? e.message) //printa erro
         }
     }
 
