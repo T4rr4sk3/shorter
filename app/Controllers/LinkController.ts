@@ -5,7 +5,7 @@ import { sign } from 'jsonwebtoken';
 import { privateKeyPath, geraCodigo, sha256, objectToString } from 'App/../utils';
 import { readFileSync } from 'fs'
 import basicLog from 'App/Logger/BasicLogger';
-
+/** Controller na qual trabalha com objetos `Link` e requisições HTTP. */
 export default class LinkController{
     private tamanhoCod = Env.get('CODE_LENGHT');
     private dominio = Env.get('DOMAIN');
@@ -82,11 +82,22 @@ export default class LinkController{
             response.notFound(view.renderSync('errors/not-found'));
         }
 
-        if(link) {            
+        if(link) {
+            //verifica se link expirou.
+            if(link.expira_em) {                
+                link.expira_em.setDate(link.expira_em.getDate() + 1) //no dia seguinte, o link está expirado.
+                
+                if(new Date().getTime() > link.expira_em.getTime()) { //se hoje > expires
+                    let msg = `Link #${link.id}, ${link.nome} de código ${link.codigo} expirou!\nTentativa de redirecionamento falha.`
+                    this.log(msg); console.log(msg)
+                    response.notFound(view.renderSync('errors/not-found'));
+                    return
+                }
+            }
+
             linkService.incrementVisitaEm1(link.id).catch((reason) => {
                 let msg = reason + `\nErro ao dar update no Link. (${this.path}:43)`
-                console.log(msg);
-                this.log(msg);
+                this.log(msg); console.log(msg);
             });
 
             //this.log('/' + codigoUrl + ': Link encontrado e atualizado. Redirecionando para ' + link.url)
@@ -99,6 +110,7 @@ export default class LinkController{
     public async postNew({ request, response }: HttpContextContract){
         const urlEnviada: string = request.body()["url"]; //pega a url do body
         const nomeLinkEnviado: string = request.body()["nome"]; //pega o nome do link do body
+        let expiraEmEnviado: Date | undefined = request.body()["expira_em"]
         let novoCodigo = geraCodigo(this.tamanhoCod); // gera novo código
         let codigoExiste = true;
         
@@ -118,7 +130,7 @@ export default class LinkController{
 
         if(urlEnviada.trim() === '') response.status(400).send({ "erro": "Tentou enviar um link vazio." })
 
-        let novoLink = await linkService.insereNoBanco({ codigo: novoCodigo, url: urlEnviada, nome: nomeLinkEnviado }).catch((reason) => erro = reason);
+        let novoLink = await linkService.insereNoBanco({ codigo: novoCodigo, url: urlEnviada, nome: nomeLinkEnviado, expira_em: expiraEmEnviado }).catch((reason) => erro = reason);
     
         if(erro){
             this.log('/new: ' + erro)

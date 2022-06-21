@@ -12,7 +12,7 @@ import fs from 'fs'
 import path from 'path'
 
 /** Caminho do certificado para a aplicação. */
-const certPath = path.resolve(Env.get('APP_CERT_PATH', './.cert'))
+const certPath = path.resolve(Env.get('APP_CERT_PATH')) //agora esse caminho é necessário para a aplicação funcionar
 
 export const privateKeyPath = path.resolve(certPath + '/api_key.pem')
 
@@ -78,9 +78,11 @@ export function encrypt(textToEncrypt: string){
   return encrypted.toString('base64');
 }
 
-/** Tenta gerar novas chaves para a aplicação no diretorio atual. Se já existirem, faz nada. */
+/** Tenta gerar novas chaves para a aplicação no diretorio atual.
+ * @returns true se chaves foram criadas, se não, false.
+ */
 export function generateKeys() {
-  if(fs.existsSync(privateKeyPath) || fs.existsSync(publicKeyPath)) return
+  if(fs.existsSync(privateKeyPath) || fs.existsSync(publicKeyPath)) return false
 
   let options : RSAKeyPairOptions<'pem', 'pem'> = { 
     modulusLength: 4096,
@@ -94,7 +96,7 @@ export function generateKeys() {
 
   fs.writeFileSync(certPath + '/api_key.pem', privateKey)
   fs.writeFileSync(certPath + '/api_key_public.pem', publicKey)
-  
+  return true
 }
 
 /** Transforma o array passado em uma string contendo o tipo + valor de cada elemento do array.
@@ -108,9 +110,9 @@ export function arrayToString(array: any[], separator?: string){
 
   if(array.length === 0) str += separador //corrige a posição para apagar o separador e deixar só o colchete vazio.
   
-  array.forEach((value) => { 
-    if(value instanceof Date) str += 'Date: ' + value.toLocaleString() + separador
-    else str += typeof value + ': ' + value.toString() + separador
+  array.forEach((value) => { if(value) 
+      if(value instanceof Date) str += 'Date: ' + value.toLocaleString() + separador
+      else str += typeof value + ': ' + value.toString() + separador
   })
   //retorna a string toda até o último separador e fecha o colchete.
   return str.substring(0, str.length - separador.length) + ' ]'

@@ -17,7 +17,8 @@ Conta com método de autenticação utilizando um token JWT para fazer as opera�
 - [x] Opção de criar a tabela no banco no início da aplicação, caso a mesma não exista
 - [x] Deixar configurações do banco opcionais e validar de acordo com o tipo de sql escolhido (assim não será necessário ter configuração para os dois tipos de sql, apenas para aquele escolhido no *.env*)
 - [x] Criar logs de acordo com a data atual, para que possa ser separado logs novos dos antigos (e melhorar a gestão de espaço por permitir apagar logs que não serão mais úteis)
-- [ ] Método para evitar logs repetidas (de um mesmo host ou ip dentro de um espaço curto de tempo), talvez não haja necessidade
+- [ ] ~~Método para evitar logs repetidas (de um mesmo host ou ip dentro de um espaço curto de tempo), talvez não haja necessidade~~
+- [ ] Lidar com valores eventualmente nulos nos parâmetros da query no MSSQLConnection
 
 #### Notas
 Quando a variável de ambiente **CREATE** for *true*, o app tentará acessar o arquivo definido no *.env* (dependendo do tipo de sql) e ler ele em forma de texto e executar o script direto no banco. Guarde este arquivo em um lugar secreto e, espero que seu .env esteja num lugar seguro, porque se não...

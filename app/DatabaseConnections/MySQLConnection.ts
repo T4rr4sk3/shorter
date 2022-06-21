@@ -3,7 +3,7 @@ import IDatabaseConnection, { SQLTypes } from "./IDatabaseConnection";
 import { BasicLogger } from "App/Logger/BasicLogger";
 import Env from '@ioc:Adonis/Core/Env'
 import { arrayToString, objectToString } from "App/../utils";
-
+/** Conexão do mysql utilizando a interface {@link IDatabaseConnection}. */
 export default class MySQLConnection implements IDatabaseConnection {
     sqlType: SQLTypes;
     sqlDialet: string;

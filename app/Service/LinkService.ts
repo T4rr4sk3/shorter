@@ -2,10 +2,11 @@ import dbConnector from "App/DatabaseConnections/DatabaseConnector"
 import { SQLTypes } from "App/DatabaseConnections/IDatabaseConnection"
 import IServiceBase from "App/Service/IServiceBase"
 
-interface NovoLink { codigo: string, url: string, nome: string }
-
+interface NovoLink { codigo: string, url: string, nome: string, expira_em?: Date }
+/** Interface de um objeto `link` do banco de dados(DBO). */
 export interface Link extends NovoLink { id: number, visitas: number }
-
+/** Service que trabalha com o CRUD de objetos do tipo `Link` e se comunica com o banco.
+ * @see Link */
 class LinkService implements IServiceBase<Link>{
     private table: string
     constructor() { this.table = dbConnector.SQLTable }
@@ -21,10 +22,18 @@ class LinkService implements IServiceBase<Link>{
     }
 
     public async insereNoBanco(link: NovoLink): Promise<number | void> {
-        let insertSQL = `INSERT INTO ${this.table} (codigo, url, nome) values (?, ?, ?)`
+        let insertSQL = `INSERT INTO ${this.table} (codigo, url, nome, expira_em) values (?, ?, ?, `
+
+        let params: any[] = [link.codigo, link.url, link.nome]
+
+        if(link.expira_em) { //tive que fazer isso por causa do tedious, que tenta converter o valor mesmo sendo nulo.
+            params.push(link.expira_em)
+            insertSQL += '?)'
+        } else
+            insertSQL += 'null)'
 
         return new Promise( (resolve, reject) => { 
-            dbConnector.executeQuery(insertSQL, [link.codigo, link.url, link.nome], (err, result) => {                
+            dbConnector.executeQuery(insertSQL, params, (err, result) => {
                 if(err) reject(err.message)
 
                 else resolve(result.insertId ?? result)
@@ -78,9 +87,8 @@ class LinkService implements IServiceBase<Link>{
 
     public async retornaLista(): Promise<Link[]>{
         return new Promise( (resolve, reject) => { 
-            dbConnector.executeQuery(`SELECT * FROM ${this.table} ORDER BY id ASC`, undefined, (err, results) => {
-                if(err) reject(err.message);
-                else resolve(results);
+            dbConnector.executeQuery(`SELECT * FROM ${this.table} ORDER BY id DESC`, undefined, (err, results) => {
+                if(err) reject(err.message); else resolve(results);
             })
         })
     }
@@ -98,6 +106,19 @@ class LinkService implements IServiceBase<Link>{
                 if(err) reject(err.message)
 
                 else resolve(link);
+            })
+        })
+    }
+
+    /** Deleta todos os links que tem data de expiração e que já passou desta data.
+     * Utilitário que talvez será utilizado no futuro em alguma rota.
+     */
+    public async deletaTodosExpirados(): Promise<void> {
+        return new Promise( (resolve, reject) => {
+            let today = (dbConnector.SQLTypeInUse === SQLTypes.SQLServer) ? 'CAST(GETDATE() AS DATE)': 'CURRENT_DATE'
+            
+            dbConnector.executeQuery(`DELETE FROM ${this.table} WHERE expira_em < ${today}`, undefined, (err) => {
+                if(err) reject(err.message); else resolve();
             })
         })
     }

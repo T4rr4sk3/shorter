@@ -6,7 +6,7 @@ import { ConnectionConfig as ConnectionConfigSQLServer } from "tedious";
 import { MSSQLConnection } from "./MSSQLConnection";
 import fs from 'fs'
 import basicLog from "App/Logger/BasicLogger";
-
+/** Representa um conector ao banco de dados utilizando uma conexão {@link IDatabaseConnection}. */
 class DatabaseConnector {
     private _connection: IDatabaseConnection;
     SQLTypeInUse: SQLTypes;
@@ -14,7 +14,8 @@ class DatabaseConnector {
 
     /** Executa uma query na conexão do banco de dados.
      * @see IDatabaseConnection.executeQuery
-     * {@link IDatabaseConnection.executeQuery} */
+     * {@link IDatabaseConnection.executeQuery} 
+    */
     executeQuery(sql: string, params?: any[], callback?: (erro?: Error, results?: any) => void) {
         this._connection.executeQuery(sql, params, callback);
     };

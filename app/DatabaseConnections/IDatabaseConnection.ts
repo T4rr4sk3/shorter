@@ -2,6 +2,9 @@ import { BasicLogger } from "App/Logger/BasicLogger";
 
 export enum SQLTypes { MySQL, SQLServer }
 
+/** Representa uma conexão com um database específico. Possui ações principais de uma conexão como 
+ * o início/fim de uma conexão e a execução de uma query no banco de dados final.
+ */
 export default interface IDatabaseConnection{
     /** Tipo do SQL da classe. */
     sqlType: SQLTypes,    
@@ -30,6 +33,7 @@ export default interface IDatabaseConnection{
      * @param sql String da query sql a ser executado.
      * @param params Parâmetros a serem passados em forma de array para a query.
      * @param callback Callback para ser executado caso dê um erro ou retorne alguma coisa da ação.
+     * @example dbConnector.executeQuery('SELECT * FROM tabela WHERE id = ?', [42], meuCallback);
     */
     executeQuery(sql: string, params?: any[], callback?: (erro?: Error, result?: any) => void),
 }

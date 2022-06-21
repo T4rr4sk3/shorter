@@ -24,7 +24,7 @@ export default Env.rules({
   APP_MASTER_USER: Env.schema.string(),
   APP_MASTER_PASS: Env.schema.string(),
   APP_SALT: Env.schema.string(),
-  APP_CERT_PATH: Env.schema.string.optional(),
+  APP_CERT_PATH: Env.schema.string(),
   CACHE_VIEWS: Env.schema.boolean(),
   SESSION_DRIVER: Env.schema.string(),
   DRIVE_DISK: Env.schema.enum(['local'] as const),

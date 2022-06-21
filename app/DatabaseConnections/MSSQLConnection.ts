@@ -3,7 +3,7 @@ import IDatabaseConnection, { SQLTypes } from "./IDatabaseConnection";
 import { BasicLogger } from "App/Logger/BasicLogger";
 import Env from '@ioc:Adonis/Core/Env'
 import { objectToString } from 'App/../utils';
-
+/** Conexão do sqlserver (também chamado de mssql para abreviatura) utilizando a interface {@link IDatabaseConnection}. */
 export class MSSQLConnection implements IDatabaseConnection{
     sqlType: SQLTypes;
     sqlDialet: string;
@@ -66,8 +66,9 @@ export class MSSQLConnection implements IDatabaseConnection{
             case 'number':
                 return TYPES.Int
 
-            case 'string':
-                return TYPES.NVarChar
+            case 'string': //se a string é do tipo Date(YYYY-MM-DD)
+                if(new RegExp(/\d\d\d\d-\d\d-\d\d/).test(param)) return TYPES.Date
+                else return TYPES.NVarChar
 
             case 'object': 
                 if(param instanceof Date)
@@ -109,7 +110,7 @@ export class MSSQLConnection implements IDatabaseConnection{
         let request = new Request(adaptedSql, (err, rowCount, results) => { callback && callback(err, this.normalizeResults(results)); rowCount; })
         
         if(params && params.length > 0)
-            params.forEach((param, i) => { request.addParameter('param' + (i + 1), this.getSQLType(param), param) })
+            params.forEach((param, i) => { request.addParameter('param' + (i + 1), this.getSQLType(param), param ?? null) })
 
         request.on('error', (err) => { this.log('Erro: ' + ((err as any).errors ?? err.message ?? objectToString(err)) + `\non request #${newConId}`); callback && callback(err, []) })
 

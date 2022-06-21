@@ -13,7 +13,7 @@ export default class Auth {
         if(!reqAuth) { 
             this.log(objectToString({ path: request.url(), erro: 'tentativa de acesso sem o header authorization', host: request.host(), hostname: request.hostname(), ip: request.ip(), method: request.method() }, 0))
             response.unauthorized(view.renderSync('errors/unauthorized')); 
-            return //depois tentar algum método para evitar logar informações repetidas
+            return //depois tentar algum método para evitar logar informações repetidas //não precisa.
         }
     
         verify(reqAuth, readFileSync(privateKeyPath), (err, decoded) => { 
