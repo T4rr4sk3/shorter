@@ -14,14 +14,14 @@ class DatabaseConnector {
 
     /** Executa uma query na conexão do banco de dados.
      * @see IDatabaseConnection.executeQuery
-     * {@link IDatabaseConnection.executeQuery} 
+     * {@link IDatabaseConnection.executeQuery}
     */
     executeQuery(sql: string, params?: any[], callback?: (erro?: Error, results?: any) => void) {
         this._connection.executeQuery(sql, params, callback);
     };
 
     constructor() {
-        let tipoSQL = Env.get('SQLTYPE');        
+        let tipoSQL = Env.get('SQLTYPE');
         switch(tipoSQL){
             case 'mysql':
                 this._connection = new MySQLConnection();

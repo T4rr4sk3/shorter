@@ -22,18 +22,10 @@ class LinkService implements IServiceBase<Link>{
     }
 
     public async insereNoBanco(link: NovoLink): Promise<number | void> {
-        let insertSQL = `INSERT INTO ${this.table} (codigo, url, nome, expira_em) values (?, ?, ?, `
-
-        let params: any[] = [link.codigo, link.url, link.nome]
-
-        if(link.expira_em) { //tive que fazer isso por causa do tedious, que tenta converter o valor mesmo sendo nulo.
-            params.push(link.expira_em)
-            insertSQL += '?)'
-        } else
-            insertSQL += 'null)'
+        let insertSQL = `INSERT INTO ${this.table} (codigo, url, nome, expira_em) values (?, ?, ?, ?)`
 
         return new Promise( (resolve, reject) => { 
-            dbConnector.executeQuery(insertSQL, params, (err, result) => {
+            dbConnector.executeQuery(insertSQL, [link.codigo, link.url, link.nome, link.expira_em], (err, result) => {
                 if(err) reject(err.message)
 
                 else resolve(result.insertId ?? result)

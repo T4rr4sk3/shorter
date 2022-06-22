@@ -83,20 +83,24 @@ export class MSSQLConnection implements IDatabaseConnection{
     /** Pega uma string sql que possua o caractere `?` e o substitui por `@param` + o numero do parametro. 
      * @example normalizeSQL('... WHERE id = ?') => '... WHERE id = \@param1'
     */
-    private normalizeSQL(sql: string) {
+    private normalizeSQL(sql: string, params?: any[]) {
         let count = 1
-        
+        let index = 0
         do{
             let i = sql.indexOf('?');
 
-            if(i !== -1){
-                let nextParam = '\@param' + count++
-                sql = sql.substring(0, i) + nextParam + sql.substring(i + 1)                
+            if(i !== -1 && params){
+                if(params[index++]) {
+                    let nextParam = '\@param' + count++
+                    sql = sql.substring(0, i) + nextParam + sql.substring(i + 1)                
+                } else 
+                    sql = sql.substring(0, i) + 'null' + sql.substring(i + 1)
+                
             }
 
         }while(sql.indexOf('?') !== -1)
         
-        //this.log(sql)
+        //this.log(sql) //use isto para ver o sql dando erro ou não no statement.
         return sql
     }
 
@@ -106,17 +110,16 @@ export class MSSQLConnection implements IDatabaseConnection{
         let newConnection = new Connection(this._config)
         //newConnection.on('end', () => { this.log('Connection #' + newConId + ' closed') })
         
-        let adaptedSql = this.normalizeSQL(sql)
+        let adaptedSql = this.normalizeSQL(sql, params)
         let request = new Request(adaptedSql, (err, rowCount, results) => { callback && callback(err, this.normalizeResults(results)); rowCount; })
         
-        if(params && params.length > 0)
-            params.forEach((param, i) => { request.addParameter('param' + (i + 1), this.getSQLType(param), param ?? null) })
+        if(params && params.length > 0) this.putParamsOnRequest(request, params) //só chama se realmente tiver parâmetros, mesmo se todos forem undefined.
 
         request.on('error', (err) => { this.log('Erro: ' + ((err as any).errors ?? err.message ?? objectToString(err)) + `\non request #${newConId}`); callback && callback(err, []) })
 
         request.on('requestCompleted', () => { this.log(`Request #${newConId} complete`); newConnection.close(); /*this._sqlCon.unprepare(request)*/ } )
 
-        request.on('prepared', () => { this.log(`Prepare statement #${newConId}: `  + adaptedSql); newConnection.execute(request, this.paramsToObj(params)) })
+        request.on('prepared', () => { this.log(`Prepare statement #${newConId}: `  + adaptedSql); newConnection.execute(request, this.paramsToObj(params, newConId)) })
         
         newConnection.connect((err) => { 
             if(err) { this.log(err.message); return }
@@ -128,12 +131,27 @@ export class MSSQLConnection implements IDatabaseConnection{
         //this._sqlCon.prepare(request); this.log('Request prepared')
     }
 
+    /** Bota os parâmetros na Request, assumindo que params não é undefined */
+    private putParamsOnRequest(request: Request, params: any[]) {
+        let count = 1
+        params.forEach((param) => { if(param) request.addParameter('param' + count++, this.getSQLType(param), param) })
+    }
+
     /** Pega o resultado, na qual vem como um array que contem rows que por sua vez 
      * tem columns, e transforma em um array de objetos. */
     private normalizeResults(results: any[]): any {
         let objects: {}[] = []
 
-        results.forEach((row: {value: any, metadata: ColumnMetaData}[]) => {
+        /** Tipo da coluna das rows do resultado que vem da request. */
+        type Column = {
+            /** Valor da coluna. */
+            value: any, 
+            /** Dados da coluna. */
+            metadata: ColumnMetaData 
+        }
+        
+        // para cada result, na qual é um conjunto de rows
+        results.forEach((row: Column[]) => {
             let obj = {}
             row.forEach( (column) => { obj[column.metadata.colName] = column.value } )
             objects.push(obj)
@@ -143,15 +161,15 @@ export class MSSQLConnection implements IDatabaseConnection{
     }
 
     /** Converte parâmetros do array para um objeto com todos os elementos do array. */
-    private paramsToObj(params?: any[]): {} {
+    private paramsToObj(params?: any[], id?: number): {} {
         const obj = {};
 
         if(!params) return obj
 
         let i = 1
-        params.forEach((param) => { obj['param' + i.toString()] = param; i++; })
+        params.forEach((param) => { if(param) obj['param' + (i++).toString()] = param })
 
-        this.log('Parameters: ' + objectToString(obj, 0))
+        this.log(`Parameters #${id}: ${objectToString(obj, 0)}`)
         return obj
     }
 
