@@ -21,14 +21,18 @@ class LinkService implements IServiceBase<Link>{
         })
     }
 
-    public async insereNoBanco(link: NovoLink): Promise<number | void> {
+    public async insereNoBanco(link: NovoLink): Promise<number> {
+        let isMSSQL = dbConnector.SQLTypeInUse === SQLTypes.SQLServer
         let insertSQL = `INSERT INTO ${this.table} (codigo, url, nome, expira_em) values (?, ?, ?, ?)`
+
+        if(isMSSQL) //se for mssql, dá um select do ultimo id da tabela, que será o valor inserido no comando anterior
+            insertSQL += `; SELECT TOP(1) id FROM ${this.table} ORDER BY id DESC`
 
         return new Promise( (resolve, reject) => { 
             dbConnector.executeQuery(insertSQL, [link.codigo, link.url, link.nome, link.expira_em], (err, result) => {
                 if(err) reject(err.message)
 
-                else resolve(result.insertId ?? result)
+                else resolve(isMSSQL ? result[0].id : result.insertId ?? result)
             })
         })
     }
