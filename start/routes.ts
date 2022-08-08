@@ -15,5 +15,5 @@ Route.get('/all', 'LinkController.getAll').middleware('auth');
 // ------------------- Pega o link pelo código e se achar, redireciona para a URL do link. -------------------
 Route.get('/:codigo', 'LinkController.redirectToLink');
 
-// ------------------- Get todos os links. -------------------
+// ------------------- Pega o token pelo método post, precisando de uma authorization valida. -------------------
 Route.post('/login', 'LinkController.getToken');

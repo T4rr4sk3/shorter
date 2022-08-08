@@ -13,7 +13,7 @@ export default class LinkController{
     private log(log: string) { basicLog.geraLog(log) }
 
     //Index                                                                     I'm a teapot!
-    public async index({ response }: HttpContextContract) { return response.status(418) }
+    public async index({ request: req, response }: HttpContextContract) { this.log(`Index reached by Host: ${req.hostname()} (${req.ip()})`); return response.status(418) }
 
     //All
     public async getAll({ response, view }: HttpContextContract){        
