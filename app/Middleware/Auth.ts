@@ -12,14 +12,16 @@ export default class Auth {
 
         if(!reqAuth) { 
             this.log(objectToString({ path: request.url(), erro: 'tentativa de acesso sem o header authorization', host: request.host(), hostname: request.hostname(), ip: request.ip(), method: request.method() }, 0))
-            response.unauthorized(view.renderSync('errors/unauthorized')); 
+            response.unauthorized(view.renderSync('errors/unauthorized'));
             return //depois tentar algum método para evitar logar informações repetidas //não precisa. 
         }
-    
+        
         verify(reqAuth, readFileSync(privateKeyPath), (err, decoded) => { 
             if(err) {
                 this.log(objectToString({ path: request.url(), erro: 'tentativa de acesso sem token', description: err, hostname: request.hostname(), ip: request.ip(), method: request.method(), reqAuth }, 0))
                 response.abort(view.renderSync('errors/unauthorized'))
+                //response.finish()
+                return
             }
 
             else{ 
@@ -29,9 +31,10 @@ export default class Auth {
                 let msg = objectToString({ 'path': request.url(), 'user': (decoded as JwtPayload).userBody, dataHora }, 0)
                 console.log(msg)
                 this.log('Auth: ' + msg)
+                
             }
         })
-
+        
         await next()
     }
 }

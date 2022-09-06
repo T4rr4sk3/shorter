@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node ace serve --watch --encore-args=\"--port 8082\" ",
     "build": "node ace build --production",
+    "test": "node ace test --watch",
     "start": "node server.js",
     "lint": "eslint . --ext=.ts",
     "format": "prettier --write ."

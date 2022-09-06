@@ -63,7 +63,7 @@ export default class LinkController{
             if(erro.message.startsWith('E_HTTP_EXCEPTION')) 
                 response.status(401).send(view.renderSync('errors/unauthorized'));
 
-            else { console.log(erro) } //; this.log(erro) } //talvez alguém tente um DDoS, inchando o log de erro. 
+            else { response.forbidden(); this.log(erro) } //talvez alguém tente um DDoS, inchando o log de erro. 
             // Depois tentar método de evitar inflar logs por causa de requisições repetidas
         }        
     }
@@ -76,10 +76,12 @@ export default class LinkController{
         let link = await linkService.pegaPorCodigo(codigoUrl).catch((reason) => { erro = reason });  
         
         if(erro){ 
-            let msg = erro + `\nErro em pegar o link pelo codigo: ${codigoUrl}. (${this.path}:37)`
+            let msg = erro + ` Erro em pegar o link pelo codigo: ${codigoUrl} (${this.path}:37)`
             console.log(msg);
             this.log(msg);
             response.notFound(view.renderSync('errors/not-found'));
+            response.finish()
+            return
         }
 
         if(link) {
@@ -88,28 +90,30 @@ export default class LinkController{
                 link.expira_em.setDate(link.expira_em.getDate() + 1) //no dia seguinte, o link está expirado.
                 
                 if(new Date().getTime() > link.expira_em.getTime()) { //se hoje > expires
-                    let msg = `Link #${link.id}, ${link.nome} de código ${link.codigo} expirou!\nTentativa de redirecionamento falha.`
+                    let msg = `Link #${link.id}, ${link.nome} de código ${link.codigo} expirou! Tentativa de redirecionamento falha.`
                     this.log(msg); console.log(msg)
                     response.notFound(view.renderSync('errors/not-found'));
+                    response.finish()
                     return
                 }
             }
 
             linkService.incrementVisitaEm1(link.id).catch((reason) => {
-                let msg = reason + `\nErro ao dar update no Link. (${this.path}:43)`
+                let msg = reason + ` Erro ao dar update no Link. (${this.path}:43)`
                 this.log(msg); console.log(msg);
             });
 
             //this.log('/' + codigoUrl + ': Link encontrado e atualizado. Redirecionando para ' + link.url)
-            response.header('cache-control', 'no-cache, no-store, max-age=3600, must-revalidate');
+            response.header('cache-control', 'no-cache, no-store, max-age=3600, must-revalidate');            
             response.redirect(link.url, undefined, 302);
+            response.finish()
         }
     }
 
     //New
     public async postNew({ request, response }: HttpContextContract){
-        const urlEnviada: string = request.body()["url"]; //pega a url do body
-        const nomeLinkEnviado: string = request.body()["nome"]; //pega o nome do link do body
+        const urlEnviada: string | undefined = request.body()["url"]; //pega a url do body
+        const nomeLinkEnviado: string | undefined = request.body()["nome"]; //pega o nome do link do body
         let expiraEmEnviado: Date | undefined = request.body()["expira_em"]
         let novoCodigo = geraCodigo(this.tamanhoCod); // gera novo código
         let codigoExiste = true;
@@ -124,17 +128,29 @@ export default class LinkController{
                 novoCodigo = geraCodigo(this.tamanhoCod);
 
         }while(codigoExiste);
+                
+        if(!urlEnviada || !nomeLinkEnviado) {
+            response.status(404).send({ "erro": "Informações inválidas" })
+            return
+        }
+        
+        let url = urlEnviada.trim(), nome = nomeLinkEnviado.trim()
+        
+        if(url === '' || nome === '') {
+            response.status(400).send({ "erro": "Tentou enviar um link vazio." })
+            response.finish()
+            return
+        }
 
-        const resultado = { urlEnviada, urlCriada: this.dominio + novoCodigo, nome: nomeLinkEnviado } //resultado já pronto.
+        const resultado = { urlEnviada: url, urlCriada: this.dominio + novoCodigo, nome } //resultado já pronto.
+        
         let erro;
-
-        if(urlEnviada.trim() === '') response.status(400).send({ "erro": "Tentou enviar um link vazio." })
-
-        let novoLink = await linkService.insereNoBanco({ codigo: novoCodigo, url: urlEnviada, nome: nomeLinkEnviado, expira_em: expiraEmEnviado }).catch((reason) => erro = reason);
+        let novoLink = await linkService.insereNoBanco({ codigo: novoCodigo, url, nome, expira_em: expiraEmEnviado }).catch((reason) => erro = reason);
     
         if(erro){
             this.log('/new: ' + erro)
             response.send({ erro })
+            response.finish()
             return
         }
 
@@ -142,6 +158,7 @@ export default class LinkController{
         console.log(msg);
         this.log('/new: ' + msg);
         response.send(resultado);
+        response.finish()
     }
 
     //Del
