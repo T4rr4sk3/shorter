@@ -28,30 +28,26 @@ export class MSSQLConnection implements IDatabaseConnection{
         this._config = configuracao
     }
 
-    start(exibeLog?: boolean): void {
-        try{
-            this._sqlCon = new Connection(this._config);
+    start(exibeLog?: boolean): void {        
+        this._sqlCon = new Connection(this._config);
 
-            if(exibeLog) this.log('Iniciando conexão com o banco...')
+        if(exibeLog) this.log('Iniciando conexão com o banco...')
 
-            this._sqlCon.connect((err) => {
-                if(exibeLog){
-                    if(err) {
-                        console.log(err.message ?? (err as any).errors);
-                        this.log(err.message)
+        this._sqlCon.connect((err) => {
+            if(exibeLog) {
+                if(err) {
+                    console.log(err.message ?? (err as any).errors);
+                    this.log(err.message)
+                    throw new Error(err.message) //para a aplicação, pois esse erro deve ser fatal
 
-                    } else {
-                        console.log('Conexão estabelecida. Dialeto: ' + this.sqlDialet);
-                        this.log('Conexão estabelecida com sucesso.')
-                        if(Env.get('EXIBE_CONFIG', false)) this.log('Configurações:\n' + objectToString(this._config))
-                        //this._sqlCon.on('debug', (message) => { this.log(message) })
-                    }
+                } else {
+                    console.log('Conexão estabelecida. Dialeto: ' + this.sqlDialet);
+                    this.log('Conexão estabelecida com sucesso.')
+                    if(Env.get('EXIBE_CONFIG', false)) this.log('Configurações:\n' + objectToString(this._config))
+                    //this._sqlCon.on('debug', (message) => { this.log(message) })
                 }
-            })
-        } catch(err){
-            if(exibeLog) { console.log(err.message ?? err.errors); this.log(err.message ?? err.errors) }
-            throw err
-        }
+            }
+        })
     }
 
     stop(imediato?: boolean, callback?: (erro?: Error) => void) {
