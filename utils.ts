@@ -30,16 +30,26 @@ export const log = (message?: string, ...params: any[]) => { if(params && params
  * @example geraCodigo(5) => '4TjaE'
  */
 export function geraCodigo(tamanho: number){
-    let text = '';
-    const possible = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-  
-    for(let i = 0; i < tamanho; i++){
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-  
-    return text;
-}
+  let text = '';
+  const possible = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
+  for(let i = 0; i < tamanho; i++){
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+
+  return text;
+}
+/** Verifica baseado no tamanho se código é válido, evitando possíveis operações com um código inválido.
+ * @param tamanho Tamanho do código
+ * @param possivelCodigo String qualquer, caso undefined, false será retornado.
+ * @returns true se código é valido.
+ * @example verificaCodigo(5, 'a7JH2') => true
+ */
+export function verificaCodigo(tamanho: number, possivelCodigo: string | undefined) {
+  const codigoRegExp = new RegExp(`^([a-zA-Z]|\\d){${tamanho}}$`)
+
+  return possivelCodigo ? codigoRegExp.test(possivelCodigo) : false // false caso possivelCodigo undefined
+}
 /** Criptograda uma string utilizando o SHA-256. */
 export function sha256(str: string, enconding?: BinaryToTextEncoding){
   return createHash('sha256').update(str).digest(enconding ?? 'hex');

@@ -1,10 +1,10 @@
+import { privateKeyPath, geraCodigo, sha256, objectToString, verificaCodigo } from 'App/../utils';
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import Env from '@ioc:Adonis/Core/Env'
 import linkService from 'App/Service/LinkService';
-import { sign } from 'jsonwebtoken';
-import { privateKeyPath, geraCodigo, sha256, objectToString } from 'App/../utils';
-import { readFileSync } from 'fs'
 import basicLog from 'App/Logger/BasicLogger';
+import Env from '@ioc:Adonis/Core/Env'
+import { sign } from 'jsonwebtoken';
+import { readFileSync } from 'fs'
 /** Controller na qual trabalha com objetos `Link` e requisições HTTP. */
 export default class LinkController{
     private tamanhoCod = Env.get('CODE_LENGHT');
@@ -21,7 +21,7 @@ export default class LinkController{
         let links = await linkService.retornaLista().catch((reason) => { erro = reason });
 
         if(erro){
-            let msg = erro + '\nErro em pegar todos os links. ('+ this.path +':21)';
+            let msg = erro + '\nErro em pegar todos os links. ('+ this.path +':24)';
             console.log(msg);
             this.log(msg);            
             response.status(500).send(view.renderSync('errors/server-error'));
@@ -71,12 +71,22 @@ export default class LinkController{
     //:Codigo
     public async redirectToLink({ response, params, view }: HttpContextContract){
         let codigoUrl = params.codigo
-        let erro;
+
+        if(!verificaCodigo(this.tamanhoCod, codigoUrl)) {
+            let msg = `Código inválido. Tentativa: ${codigoUrl} (${this.path}:76)`
+            console.log(msg); 
+            this.log(msg);
+            response.notFound(view.renderSync('errors/not-found')); 
+            response.finish()
+            return;
+        }
+
+        let erro: any;
 
         let link = await linkService.pegaPorCodigo(codigoUrl).catch((reason) => { erro = reason });  
         
         if(erro){ 
-            let msg = erro + ` Erro em pegar o link pelo codigo: ${codigoUrl} (${this.path}:37)`
+            let msg = erro + ` Erro em pegar o link pelo codigo: ${codigoUrl} (${this.path}:89)`
             console.log(msg);
             this.log(msg);
             response.notFound(view.renderSync('errors/not-found'));
