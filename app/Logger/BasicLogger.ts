@@ -1,34 +1,44 @@
-import fs from 'fs'
 import Env from '@ioc:Adonis/Core/Env'
+import fs from 'fs'
 /** Interface de um Logger. */
-interface ILogger { 
-    pathLogFile: string,
-    geraLog: (log: string) => void, 
-    inicializaLog(fileName: string): void 
+interface LoggerContract {
+  pathLogFile: string
+  geraLog: (log: string) => void
+  inicializaLog(fileName: string): void
 }
 
 /** Classe base para gerar arquivos de log e escrever sobre eles. */
-export class BasicLogger implements ILogger {
-    pathLogFile: string
-    
-    constructor(nomeArquivo: string) { this.inicializaLog(nomeArquivo) }
+export class BasicLogger implements LoggerContract {
+  public pathLogFile: string
 
-    inicializaLog(fileName: string){
-        //let caminhoLogs = path.relative(__dirname, Env.get('LOGS_PATH')) //caso eu bote um caminho já existente
-        let pathToLogs = Env.get('LOGS_PATH'), now = new Date(), data = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}-${now.getDate()}`
-        this.pathLogFile = `${pathToLogs}/${data}_${fileName}`
+  constructor(nomeArquivo: string) {
+    this.inicializaLog(nomeArquivo)
+  }
 
-        if(!fs.existsSync(pathToLogs)) fs.mkdirSync(pathToLogs)
+  public inicializaLog(fileName: string) {
+    //let caminhoLogs = path.relative(__dirname, Env.get('LOGS_PATH')) //caso eu bote um caminho já existente
+    let pathToLogs = Env.get('LOGS_PATH')
+    let now = new Date()
+    let data = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}-${now.getDate()}`
+    this.pathLogFile = `${pathToLogs}/${data}_${fileName}`
 
-        fs.open(this.pathLogFile, 'a', (err) => { if(err) throw err }) //tenta criar e ver no arquivo para escrever (modo append).
-    }
+    if (!fs.existsSync(pathToLogs)) fs.mkdirSync(pathToLogs)
 
-    geraLog(log: string) {
-        let line = `[ ${new Date().toLocaleString()} ] - ${log}\n`
+    fs.open(this.pathLogFile, 'a', (err) => {
+      if (err) throw err
+    }) //tenta criar e ver no arquivo para escrever (modo append).
+  }
 
-        fs.appendFile(this.pathLogFile, line, (err) => { if(err) throw err });
-    }
+  public geraLog(log: string) {
+    let line = `[ ${new Date().toLocaleString()} ] - ${log}\n`
 
+    fs.appendFile(this.pathLogFile, line, (err) => {
+      if (err) throw err
+    })
+  }
 }
 
 const basicLog = new BasicLogger('access.log')

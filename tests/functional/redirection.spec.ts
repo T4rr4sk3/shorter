@@ -1,18 +1,18 @@
-import { test } from "@japa/runner";
+import { test } from '@japa/runner'
 
 test.group('Redirect', () => {
-    test('API is up!', async ({client}) => {
-        const res = await client.get('/')
+  test('API is up!', async ({ client }) => {
+    const res = await client.get('/')
 
-        res.assertStatus(418)
-    })    
+    res.assertStatus(418)
+  })
 
-    test('Get Page to redirect', async ({ client }) => {
-        const res = await client.get('/KSqgL')
+  test('Get Page to redirect', async ({ client }) => {
+    const res = await client.get('/KSqgL')
 
-        console.debug(res.body())
-        res.assertStatus(302)
-    })
+    console.debug(res.body())
+    res.assertStatus(302)
+  })
 })
 
 // test.group('Redirect', () => {

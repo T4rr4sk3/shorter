@@ -1,13 +1,13 @@
-import { 
-  createHash, 
-  BinaryToTextEncoding, 
-  privateDecrypt, 
-  publicEncrypt, 
-  generateKeyPairSync, 
+import Env from '@ioc:Adonis/Core/Env'
+import {
+  BinaryToTextEncoding,
+  createHash,
+  generateKeyPairSync,
+  privateDecrypt,
+  publicEncrypt,
   RSAKeyPairOptions,
   RsaPublicKey,
 } from 'crypto'
-import Env from '@ioc:Adonis/Core/Env'
 import fs from 'fs'
 import path from 'path'
 
@@ -22,22 +22,25 @@ export const publicKeyPath = path.resolve(certPath + '/api_key_public.pem')
  * @param message Mensagem a ser escrita.
  * @param params Array de objetos a serem mostrados.
  */
-export const log = (message?: string, ...params: any[]) => { if(params && params.length > 0) console.log(message, params); else console.log(message); }
+export const log = (message?: string, ...params: any[]) => {
+  if (params && params.length > 0) console.log(message, params)
+  else console.log(message)
+}
 
 /** Gera uma string de código aleatóriamente, dado o tamanho da string.
  * @param tamanho Tamanho do código
  * @returns Um código aleatório.
  * @example geraCodigo(5) => '4TjaE'
  */
-export function geraCodigo(tamanho: number){
-  let text = '';
-  const possible = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+export function geraCodigo(tamanho: number) {
+  let text = ''
+  const possible = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 
-  for(let i = 0; i < tamanho; i++){
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  for (let i = 0; i < tamanho; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length))
   }
 
-  return text;
+  return text
 }
 /** Verifica baseado no tamanho se código é válido, evitando possíveis operações com um código inválido.
  * @param tamanho Tamanho do código
@@ -51,8 +54,10 @@ export function verificaCodigo(tamanho: number, possivelCodigo: string | undefin
   return possivelCodigo ? codigoRegExp.test(possivelCodigo) : false // false caso possivelCodigo undefined
 }
 /** Criptograda uma string utilizando o SHA-256. */
-export function sha256(str: string, enconding?: BinaryToTextEncoding){
-  return createHash('sha256').update(str).digest(enconding ?? 'hex');
+export function sha256(str: string, enconding?: BinaryToTextEncoding) {
+  return createHash('sha256')
+    .update(str)
+    .digest(enconding ?? 'hex')
 }
 
 /** Pega o valor de uma string dentro da string (usado para pegar valores do Digest).
@@ -60,49 +65,54 @@ export function sha256(str: string, enconding?: BinaryToTextEncoding){
  * @param strBusca A string que será feita a busca do valor.
  * @example pegaValorStr('username="alguem"', 'username') = 'alguem';
  */
-export function pegaValorStr(strToda: string, strBusca: string){
+export function pegaValorStr(strToda: string, strBusca: string) {
   let searchStr = strBusca + '="'
   let startPos = strToda.lastIndexOf(searchStr) + searchStr.length
-  if(startPos === -1) return ''
+  if (startPos === -1) return ''
 
   return strToda.substring(startPos, strToda.indexOf('"', startPos + 1))
 }
 
 /** Descriptografa um texto utilizando a privateKey existente. Caso a mesma não exista, irá da erro. */
-export function decrypt( textToDecrypt: string){
+export function decrypt(textToDecrypt: string) {
   const privateKey = fs.readFileSync(privateKeyPath, 'utf8')
-  const buffer = Buffer.from(textToDecrypt, 'base64')  
+  const buffer = Buffer.from(textToDecrypt, 'base64')
 
   const decrypted = privateDecrypt({ key: privateKey, passphrase: '' }, buffer)
 
-  return decrypted.toString('base64');
+  return decrypted.toString('base64')
 }
 
 /** Criptografa um texto utilizando a publicKey existente. Caso a mesma não exista, irá dar erro. */
-export function encrypt(textToEncrypt: string){
+export function encrypt(textToEncrypt: string) {
   const publicKey = fs.readFileSync(publicKeyPath, 'utf8')
   const buffer = Buffer.from(textToEncrypt, 'base64')
-  const key : RsaPublicKey = { key: publicKey } //, padding: 'RSA_PKCS1_OAEP_PADDING' }
+  const key: RsaPublicKey = { key: publicKey } //, padding: 'RSA_PKCS1_OAEP_PADDING' }
   const encrypted = publicEncrypt(key, buffer)
 
-  return encrypted.toString('base64');
+  return encrypted.toString('base64')
 }
 
 /** Tenta gerar novas chaves para a aplicação no diretorio atual.
  * @returns true se chaves foram criadas, se não, false.
  */
 export function generateKeys() {
-  if(fs.existsSync(privateKeyPath) || fs.existsSync(publicKeyPath)) return false
+  if (fs.existsSync(privateKeyPath) || fs.existsSync(publicKeyPath)) return false
 
-  let options : RSAKeyPairOptions<'pem', 'pem'> = { 
+  let options: RSAKeyPairOptions<'pem', 'pem'> = {
     modulusLength: 4096,
     publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem', cipher: 'aes-256-cbc', passphrase: 'c81e728' }
-   }
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'pem',
+      cipher: 'aes-256-cbc',
+      passphrase: 'c81e728',
+    },
+  }
 
-  const { publicKey, privateKey } = generateKeyPairSync('rsa', options) 
+  const { publicKey, privateKey } = generateKeyPairSync('rsa', options)
 
-  if(!fs.existsSync(certPath)) fs.mkdirSync(certPath)
+  if (!fs.existsSync(certPath)) fs.mkdirSync(certPath)
 
   fs.writeFileSync(certPath + '/api_key.pem', privateKey)
   fs.writeFileSync(certPath + '/api_key_public.pem', publicKey)
@@ -115,13 +125,15 @@ export function generateKeys() {
  * @returns Uma string representando o array informado.
  * @example arrayToString(['bom',5,'dia']) => '[ string: bom, number: 5, string: dia ]'
  */
-export function arrayToString(array: any[], separator?: string){
-  let str = '[ ', separador = separator ?? ', '
+export function arrayToString(array: any[], separator?: string) {
+  let str = '[ '
+  let separador = separator ?? ', '
 
-  if(array.length === 0) str += separador //corrige a posição para apagar o separador e deixar só o colchete vazio.
-  
-  array.forEach((value) => { if(value) 
-      if(value instanceof Date) str += 'Date: ' + value.toLocaleString() + separador
+  if (array.length === 0) str += separador //corrige a posição para apagar o separador e deixar só o colchete vazio.
+
+  array.forEach((value) => {
+    if (value)
+      if (value instanceof Date) str += 'Date: ' + value.toLocaleString() + separador
       else str += typeof value + ': ' + value.toString() + separador
   })
   //retorna a string toda até o último separador e fecha o colchete.
@@ -129,15 +141,26 @@ export function arrayToString(array: any[], separator?: string){
 }
 
 /** Retorna uma string em JSON correspondente ao objeto. */
-export function objectToString(obj: any, space?: string | number){
+export function objectToString(obj: any, space?: string | number) {
   return JSON.stringify(obj, undefined, space ?? 1)
 }
 
 /** @description Define um objeto genérico que tenha um id.  @abstract { id: number, ...}*/
-interface GenericObject { id: number }
+interface GenericObject {
+  id: number
+}
 /** Busca por um objeto (que possua um `id: number`) no array e retorna seu index.
  * @returns O index do objeto ou -1 caso não encontrado.
  */
-export function buscaIndexNoArrayPorId<Type extends GenericObject>(arrayBusca: Type[], idBusca: number){
-  return arrayBusca.findIndex((value) => { return value.id === idBusca })
+export function buscaIndexNoArrayPorId<Type extends GenericObject>(
+  arrayBusca: Type[],
+  idBusca: number
+) {
+  return arrayBusca.findIndex((value) => {
+    return value.id === idBusca
+  })
+}
+
+export function makeTmpPath(pathTo: string) {
+  if (!fs.existsSync(pathTo)) fs.mkdirSync(pathTo)
 }
