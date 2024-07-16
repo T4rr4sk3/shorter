@@ -221,7 +221,29 @@ export default class LinkController {
   }
 
   //:Codigo/qrcode
-  public async getLinkQRcode({ response, params, view }: HttpContextContract) {
+  public async getLinkQRcode({ request, response, params, view }: HttpContextContract) {
+    const { scale: scaleQs, width: widthQs, type: typeQs } = request.qs()
+
+    const scale = parseInt(String(scaleQs), 10)
+    const width = parseInt(String(widthQs), 10)
+
+    if ((scaleQs && isNaN(scale)) || (width && isNaN(width))) {
+      response.badRequest(view.renderSync('errors/bad-request'))
+      response.finish()
+      return
+    }
+
+    const typeFile: string = String(typeQs || 'png')
+    const permittedFiles = ['png', 'svg', '.png', '.svg']
+
+    if (typeQs && !permittedFiles.includes(typeFile)) {
+      response.badRequest(view.renderSync('errors/bad-request'))
+      response.finish()
+      return
+    }
+
+    const correctedType = typeFile.endsWith('svg') ? 'svg' : 'png'
+
     const codigoUrl = params.codigo
 
     if (!verificaCodigo(this.tamanhoCod, codigoUrl)) {
@@ -265,22 +287,32 @@ export default class LinkController {
       }
 
       const randomId = Math.random() * 10000
-      const path = Application.tmpPath(randomId + '.png')
+      const path = Application.tmpPath(randomId + '.' + correctedType)
       const domain = Env.get('DOMAIN')
-      response.header('content-disposition', 'attachment; filename="shortlink.png"')
-      response.header('content-type', 'image/png')
+      response.header(
+        'content-disposition',
+        `attachment; filename="shortlink-${codigoUrl}.${correctedType}"`
+      )
+      response.header('content-type', correctedType === 'svg' ? 'image/svg+xml' : 'image/png')
 
       try {
-        await QR.toFile(path, domain + link.codigo, { errorCorrectionLevel: 'H' })
-        const stream = createReadStream(path)
-        await response.stream(stream)
-
-        rm(path, { force: true, recursive: true, maxRetries: 5 }, (err) => {
-          if (err) {
-            console.log(err.message)
-            this.log(err.message)
-          }
+        await QR.toFile(path, domain + link.codigo, {
+          type: correctedType,
+          errorCorrectionLevel: 'H',
+          width,
+          scale,
         })
+        const stream = createReadStream(path)
+        response.stream(stream)
+
+        setImmediate((file: string) => {
+          rm(file, { force: true, recursive: true, maxRetries: 5 }, (err) => {
+            if (err) {
+              console.log(err.message, 'Failed to delete the file ' + file)
+              this.log(err.message)
+            }
+          })
+        }, path)
       } catch (e) {
         console.log(e.message)
         this.log(e.message)
