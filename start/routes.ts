@@ -18,4 +18,8 @@ Route.post('/login', 'LinkController.getToken')
 // ------------------- Pega o link pelo código e se achar, redireciona para a URL do link. -------------------
 Route.get('/:codigo', 'LinkController.redirectToLink')
 
+// ------------------- Pega o link pelo código e se achar, retorna a imagem qrcode do link via stream. -------------------
 Route.get('/:codigo/qrcode', 'LinkController.getLinkQRcode').middleware('auth')
+
+// ------------------- Pega o link pelo código e se achar, redireciona para a URL do link. -------------------
+Route.patch('/:id', 'LinkController.patchLink').middleware('auth')

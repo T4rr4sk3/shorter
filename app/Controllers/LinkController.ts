@@ -31,7 +31,7 @@ export default class LinkController {
     })
 
     if (erro) {
-      let msg = erro + '\nErro em pegar todos os links. (' + this.path + ':24)'
+      let msg = erro + '\nErro em pegar todos os links. (' + this.path + ':34)'
       console.log(msg)
       this.log(msg)
       response.status(500).send(view.renderSync('errors/server-error'))
@@ -92,7 +92,7 @@ export default class LinkController {
     const codigoUrl = params.codigo
 
     if (!verificaCodigo(this.tamanhoCod, codigoUrl)) {
-      let msg = `Código inválido. Tentativa: ${codigoUrl} (${this.path}:76)`
+      let msg = `Código inválido. Tentativa: ${codigoUrl} (${this.path}:95)`
       console.log(msg)
       this.log(msg)
       response.notFound(view.renderSync('errors/not-found'))
@@ -107,7 +107,7 @@ export default class LinkController {
     })
 
     if (erro) {
-      let msg = erro + ` Erro em pegar o link pelo codigo: ${codigoUrl} (${this.path}:89)`
+      let msg = erro + ` Erro em pegar o link pelo codigo: ${codigoUrl} (${this.path}:110)`
       console.log(msg)
       this.log(msg)
       response.notFound(view.renderSync('errors/not-found'))
@@ -132,7 +132,7 @@ export default class LinkController {
       }
 
       linkService.incrementVisitaEm1(link.id).catch((reason) => {
-        let msg = reason + ` Erro ao dar update no Link. (${this.path}:43)`
+        let msg = reason + ` Erro ao dar update no Link. (${this.path}:135)`
         this.log(msg)
         console.log(msg)
       })
@@ -228,7 +228,9 @@ export default class LinkController {
     const width = parseInt(String(widthQs), 10)
 
     if ((scaleQs && isNaN(scale)) || (width && isNaN(width))) {
-      response.badRequest(view.renderSync('errors/bad-request'))
+      response.badRequest(
+        view.renderSync('errors/bad-request', { message: 'Escala ou largura inválidos' })
+      )
       response.finish()
       return
     }
@@ -237,7 +239,9 @@ export default class LinkController {
     const permittedFiles = ['png', 'svg', '.png', '.svg']
 
     if (typeQs && !permittedFiles.includes(typeFile)) {
-      response.badRequest(view.renderSync('errors/bad-request'))
+      response.badRequest(
+        view.renderSync('errors/bad-request', { message: 'Tipo arquivo inválido' })
+      )
       response.finish()
       return
     }
@@ -247,10 +251,10 @@ export default class LinkController {
     const codigoUrl = params.codigo
 
     if (!verificaCodigo(this.tamanhoCod, codigoUrl)) {
-      let msg = `Código inválido. Tentativa: ${codigoUrl} (${this.path}:76)`
+      let msg = `Código inválido. Tentativa: ${codigoUrl} (${this.path}:254)`
       console.log(msg)
       this.log(msg)
-      response.notFound(view.renderSync('errors/not-found'))
+      response.notFound(view.renderSync('errors/not-found', { message: 'Código inválido.' }))
       response.finish()
       return
     }
@@ -262,10 +266,10 @@ export default class LinkController {
     })
 
     if (erro) {
-      let msg = erro + ` Erro em pegar o link pelo codigo: ${codigoUrl} (${this.path}:89)`
+      let msg = erro + ` Erro em pegar o link pelo codigo: ${codigoUrl} (${this.path}:269)`
       console.log(msg)
       this.log(msg)
-      response.notFound(view.renderSync('errors/not-found'))
+      response.notFound(view.renderSync('errors/not-found', { message: 'Link não encontrado.' }))
       response.finish()
       return
     }
@@ -317,6 +321,60 @@ export default class LinkController {
         console.log(e.message)
         this.log(e.message)
       }
+    }
+  }
+
+  //:ID
+  public async patchLink({ request: req, params, response, view }: HttpContextContract) {
+    // no futuro pode ter outros campos, mas a maioria são somente para visualização
+    // portanto, só terá nome por enquanto...
+    const novoNome: string | undefined = req.body().nome
+
+    if (!novoNome?.trim() || novoNome.length > 100) {
+      const message =
+        novoNome?.length || 0 > 100 ? 'Nome muito grande' : 'Nome não incluso na requisição'
+      response.badRequest(view.renderSync('errors/bad-request', { message }))
+      response.finish()
+      return
+    }
+
+    const id = params.id
+    let erro
+
+    const link = await linkService.pegaPorId(id).catch((reason) => {
+      erro = reason
+    })
+
+    if (erro) {
+      const msg = erro + ` Erro em pegar o link pelo id: ${id} (${this.path}:349)`
+      this.log(msg)
+      console.log(msg)
+      response.send({ erro })
+      response.finish()
+      return
+    }
+
+    if (link) {
+      link.nome = novoNome.trim()
+
+      await linkService.updateNoBanco(link).catch((reason) => {
+        erro = reason
+      })
+
+      if (erro) {
+        const msg = erro + ` Erro para atualizar o link pelo id: ${id} (${this.path}:365)`
+        this.log(msg)
+        console.log(msg)
+        response.send({ erro })
+        response.finish()
+        return
+      }
+
+      response.send(link)
+      response.finish()
+    } else {
+      response.notFound(view.renderSync('errors/not-found', { message: 'Link não encontrado.' }))
+      response.finish()
     }
   }
 }
