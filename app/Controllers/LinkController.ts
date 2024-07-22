@@ -4,7 +4,7 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { geraCodigo, objectToString, privateKeyPath, sha256, verificaCodigo } from 'App/../utils'
 import basicLog from 'App/Logger/BasicLogger'
 import linkService from 'App/Service/LinkService'
-import { createReadStream, readFileSync, rm } from 'fs'
+import { createReadStream, readFileSync, rmSync } from 'fs'
 import { sign } from 'jsonwebtoken'
 import QR from 'qrcode'
 
@@ -307,16 +307,21 @@ export default class LinkController {
           scale,
         })
         const stream = createReadStream(path)
-        response.stream(stream)
+        await response.stream(stream)
 
-        setImmediate((file: string) => {
-          rm(file, { force: true, recursive: true, maxRetries: 5 }, (err) => {
-            if (err) {
+        setTimeout(
+          (file: string) => {
+            try {
+              // try to delete the file
+              rmSync(file, { force: true, recursive: true, maxRetries: 5 })
+            } catch (err) {
               console.log(err.message, 'Failed to delete the file ' + file)
               this.log(err.message)
             }
-          })
-        }, path)
+          },
+          300, // milliseconds
+          path // path
+        )
       } catch (e) {
         console.log(e.message)
         this.log(e.message)

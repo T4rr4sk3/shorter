@@ -14,7 +14,7 @@ class DatabaseConnector {
 
   /** Executa uma query na conexão do banco de dados.
    * @see DatabaseConnectionContract.executeQuery
-   * {@link DatabaseConnectionContract.executeQuery}
+   * {@link DatabaseConnectionContract}
    */
   public executeQuery(
     sql: string,

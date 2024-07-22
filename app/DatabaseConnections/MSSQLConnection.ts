@@ -80,6 +80,10 @@ export class MSSQLConnection implements DatabaseConnectionContract {
     }
   }
 
+  private validParam(param: any) {
+    return typeof param !== 'undefined' || typeof param !== 'function'
+  }
+
   /** Pega uma string sql que possua o caractere `?` e o substitui por `@param` + o numero do parametro.
    * @example normalizeSQL('... WHERE id = ?') => '... WHERE id = \@param1'
    */
@@ -90,7 +94,7 @@ export class MSSQLConnection implements DatabaseConnectionContract {
       let i = sql.indexOf('?')
 
       if (i !== -1 && params) {
-        if (params[index++]) {
+        if (this.validParam(params[index++])) {
           let nextParam = '@param' + count++
           sql = sql.substring(0, i) + nextParam + sql.substring(i + 1)
         } else sql = sql.substring(0, i) + 'null' + sql.substring(i + 1)
@@ -155,7 +159,9 @@ export class MSSQLConnection implements DatabaseConnectionContract {
   private putParamsOnRequest(request: Request, params: any[]) {
     let count = 1
     params.forEach((param) => {
-      if (param) request.addParameter('param' + count++, this.getSQLType(param), param)
+      if (this.validParam(param)) {
+        request.addParameter('param' + count++, this.getSQLType(param), param)
+      }
     })
   }
 
@@ -192,7 +198,9 @@ export class MSSQLConnection implements DatabaseConnectionContract {
 
     let i = 1
     params.forEach((param) => {
-      if (param) obj['param' + (i++).toString()] = param
+      if (this.validParam(param)) {
+        obj['param' + (i++).toString()] = param
+      }
     })
 
     this.log(`Parameters #${id}: ${objectToString(obj, 0)}`)
